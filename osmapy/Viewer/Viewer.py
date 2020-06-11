@@ -2,6 +2,7 @@
 
 import pathlib
 import webbrowser
+from typing import Optional
 
 import numpy as np
 from PySide2 import QtCore
@@ -199,6 +200,26 @@ class Viewer(QDialog):
         """
         self.click = False
 
+    def get_element_around(self, posx: int, posy: int) -> Optional[int]:
+        """Get element next to (mouse) position
+        
+        Args:
+            screenx:
+                The x coordinate relative to the Viewer
+            screeny:
+                The y coordinate relative to the Viewer
+        
+        Returns:
+            A node or way ID, if something is near enough
+        """
+        THRESHOLD = 15
+        elems = {elem_id: self.xy2screen(elem.x, elem.y) for (elem_id, elem) in self.elements_loader.elements.items()}
+        object_distances = {eid: np.sqrt((x - posx) ** 2 + (y - posy) ** 2) for (eid, (x, y)) in elems.items()}
+        # Filter
+        object_distances = {eid: dist for eid, dist in object_distances.items() if dist < THRESHOLD}
+        if object_distances:
+            return min(object_distances, key=lambda e: object_distances[e])
+
     def mousePressEvent(self, event):
         """ Callback when the mouse is clicked. This is use to react on a click on the OSM copyright, select a node
         or create a new node.
@@ -217,17 +238,10 @@ class Viewer(QDialog):
             if event.buttons() == QtCore.Qt.RightButton:
                 posx = event.x()
                 posy = event.y()
-                smallest = 9999999
-                elem_id = None
-                for key, elem in self.elements_loader.elements.items():
-                    xscreen, yscreen = self.xy2screen(elem.x, elem.y)
-                    dist = np.sqrt((xscreen - posx) ** 2 + (yscreen - posy) ** 2)
-                    if dist < smallest:
-                        elem_id = key
-                        smallest = dist
+                elem_id = self.get_element_around(posx, posy)
+                self.elements_loader.selected_node = elem_id
+                self.update()
                 if elem_id:
-                    self.elements_loader.selected_node = elem_id
-                    self.update()
                     self.element_viewer.set_node(self.elements_loader.elements[elem_id])
         elif self.mode == "new_node":
             if event.buttons() == QtCore.Qt.RightButton:

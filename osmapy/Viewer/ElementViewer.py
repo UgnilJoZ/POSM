@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from typing import Union
 from functools import partial
 
 from PySide2.QtWidgets import QFormLayout, QWidget, QLineEdit, QLabel, QPushButton, QInputDialog
+from ..ElementsLoader.Node import Node
+from ..ElementsLoader.Way import Way
 
 
 class ElementViewer(QWidget):
@@ -26,38 +29,38 @@ class ElementViewer(QWidget):
         layout.addRow(text)
         self.setLayout(layout)
 
-    def set_node(self, node):
+    def set_node(self, element: Union[Node, Way]):
         """ Change the node shown in the ElementViewer
 
         Args:
-            node (Node): Node that should be shown in the ElementViewer.
+            node: Node that should be shown in the ElementViewer.
         """
-        self.id = node.id
+        self.id = element.id
 
         QWidget().setLayout(self.layout())
         layout = QFormLayout()
 
-        # Node information which cannot be changed by the user
-        layout.addRow("Id", QLabel(str(node.id)))
-        layout.addRow("Uid", QLabel(str(node.data["uid"])))
-        layout.addRow("User", QLabel(str(node.data["user"])))
-        layout.addRow("Version", QLabel(str(node.data["version"])))
-        layout.addRow("Changeset", QLabel(str(node.data["changeset"])))
-        layout.addRow("Timestamp", QLabel(str(node.data["timestamp"])))
+        # Element information which cannot be changed by the user
+        layout.addRow("Id", QLabel(str(element.id)))
+        layout.addRow("Uid", QLabel(str(element.data["uid"])))
+        layout.addRow("User", QLabel(str(element.data["user"])))
+        layout.addRow("Version", QLabel(str(element.data["version"])))
+        layout.addRow("Changeset", QLabel(str(element.data["changeset"])))
+        layout.addRow("Timestamp", QLabel(str(element.data["timestamp"])))
 
-        # Properties of nodes which can be changed by the user
+        # Properties of elements which can be changed by the user
         for filed_humanreadable, field in zip(["Latitiude", "Longitude"], ["lat", "lon"]):
-            edit = QLineEdit(str(node.data[field]))
+            edit = QLineEdit(str(element.data[field]))
             layout.addRow(filed_humanreadable, edit)
             edit.textChanged.connect(partial(self.modify_property, field))
 
         # Tags which can be deleted an modified
-        if len(node.data["tags"]) > 0:
+        if len(element.data["tags"]) > 0:
             text = QLabel("Tags")
             text.setStyleSheet("font-weight: bold")
             layout.addRow(text)
 
-            for key, value in node.data["tags"].items():
+            for key, value in element.data["tags"].items():
                 key_edit = QPushButton(key)
                 value_edit = QLineEdit(value)
                 layout.addRow(key_edit, value_edit)
